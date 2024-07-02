@@ -209,7 +209,9 @@
       "memoryState": "内存状态",
       "progressColor": "主色",
       "progressRailColor": "副色",
-      "systemState": "系统状态"
+      "systemState": "系统状态",
+      "suspend": "休眠中",
+      "running": "运行中"
     }
   },
   "form": {

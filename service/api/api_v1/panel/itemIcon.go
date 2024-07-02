@@ -13,6 +13,7 @@ import (
 	"sun-panel/api/api_v1/common/base"
 	"sun-panel/global"
 	"sun-panel/lib/cmn"
+	"sun-panel/lib/computerInfo"
 	"sun-panel/lib/siteFavicon"
 	"sun-panel/models"
 	"time"
@@ -144,6 +145,33 @@ func (a *ItemIcon) GetListByGroupId(c *gin.Context) {
 	}
 
 	apiReturn.SuccessListData(c, itemIcons, 0)
+}
+
+func (a *ItemIcon) GetServerState(c *gin.Context) {
+	req := panelApiStructs.ItemIconGetSiteFaviconReq{}
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
+		apiReturn.ErrorParamFomat(c, err.Error())
+		return
+	}
+	status := computerInfo.CheckHostStatus(req.Url)
+	apiReturn.SuccessData(c, status)
+}
+
+func (a *ItemIcon) ChangeServerState(c *gin.Context) {
+	req := panelApiStructs.ItemIconServerStateReq{}
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
+		apiReturn.ErrorParamFomat(c, err.Error())
+		return
+	}
+	ip := req.Url
+	if req.State == 1 {
+		computerInfo.SleepHandler(ip)
+	} else {
+		computerInfo.WakeOnLanHandler(req.Mac)
+	}
+
+	status := computerInfo.CheckHostStatus(ip)
+	apiReturn.SuccessData(c, status)
 }
 
 func (a *ItemIcon) Deletes(c *gin.Context) {

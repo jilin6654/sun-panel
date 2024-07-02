@@ -69,6 +69,10 @@ function openPage(openMethod: number, url: string, title?: string) {
 }
 
 function handleItemClick(itemGroupIndex: number, item: Panel.ItemInfo) {
+  console.log(item)
+  if (item.title?.includes('服务器'))
+    return
+
   if (items.value[itemGroupIndex] && items.value[itemGroupIndex].sortStatus) {
     handleEditItem(item)
     return
@@ -84,7 +88,7 @@ function handleItemClick(itemGroupIndex: number, item: Panel.ItemInfo) {
   openPage(item.openMethod, jumpUrl, item.title)
 }
 
-function handWindowIframeIdLoad(payload: Event) {
+function handWindowIframeIdLoad(_payload: Event) {
   windowIframeIsLoad.value = false
 }
 
@@ -177,7 +181,7 @@ function onClickoutside() {
   dropdownShow.value = false
 }
 
-function handleEditSuccess(item: Panel.ItemInfo) {
+function handleEditSuccess(_item: Panel.ItemInfo) {
   getList()
 }
 

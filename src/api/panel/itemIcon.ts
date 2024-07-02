@@ -48,3 +48,17 @@ export function getSiteFavicon<T>(url: string) {
     data: { url },
   })
 }
+
+export function getServerState<T>(url: string) {
+  return post<T>({
+    url: '/panel/itemIcon/getServerState',
+    data: { url },
+  })
+}
+
+export function changeServerState<T>(url: string, mac: string, state: number) {
+  return post<T>({
+    url: '/panel/itemIcon/changeServerState',
+    data: { url, state, mac },
+  })
+}

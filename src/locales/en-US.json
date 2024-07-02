@@ -209,7 +209,9 @@
       "memoryState": "Memory status",
       "progressColor": "Main color",
       "progressRailColor": "Secondary color",
-      "systemState": "System status"
+      "systemState": "System status",
+      "suspend": "suspend",
+      "running": "running"
     }
   },
   "form": {
