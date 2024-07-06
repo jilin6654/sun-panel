@@ -1,0 +1,63 @@
+name: Build for OpenWrt
+
+on:
+  workflow_dispatch:  # 仅手动触发
+    inputs:
+      build_target:
+        description: 'Build target'
+        required: true
+        default: 'arm64'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+
+    - name: Install frontend dependencies
+      run: |
+        npm install
+
+    - name: Build Vue3 frontend
+      run: |
+        npm run build
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+
+    - name: Install go-bindata tools
+      run: |
+        cd service
+        go install -a -v github.com/go-bindata/go-bindata/...@latest
+        go install -a -v github.com/elazarl/go-bindata-assetfs/...@latest
+
+    - name: Add GOPATH/bin to PATH
+      run: echo "${{ runner.tool_cache }}/go/bin" >> $GITHUB_PATH
+
+    - name: Generate go-bindata assets
+      run: |
+        cd service
+        go-bindata-assetfs -o=assets/bindata.go -pkg=assets assets/...
+
+    - name: Build Golang backend
+      run: |
+        cd service
+        GOARCH=${{ github.event.inputs.build_target }} GOOS=linux go build -o sun-panel main.go
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: production-package-${{ github.event.inputs.build_target }}
+        path: |
+          service/sun-panel
+          dist
