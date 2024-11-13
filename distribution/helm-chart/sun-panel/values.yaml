@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: registry.cn-hangzhou.aliyuncs.com/burning/sun-panel
+  
+ingressHostname: sunpanel.example.com
+
+mysql:
+  host: demo-mysql.namespace.svc
+  username: root
+  port: 3306
+  password: 123456
+  dbname: sun_panel
+
+resources:
+  limits:
+    cpu: 20m
+    memory: 60Mi
+  requests:
+    cpu: 10m
+    memory: 30Mi

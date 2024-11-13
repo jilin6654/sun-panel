@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingress-{{ include "sun-panel.fullname" . }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`{{ .Values.ingressHostname }}`)
+      kind: Rule
+      services:
+        - name: svc-{{ include "sun-panel.fullname" . }}
+          port: 3002
