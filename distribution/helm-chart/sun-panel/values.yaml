@@ -3,7 +3,10 @@ replicaCount: 1
 image:
   repository: hslr/sun-panel
 
-ingressHostname: sunpanel.example.com
+ingress:
+  hostname: sunpanel.example.com
+  https: false
+  certificateName: wildcard-tls-certificate # only used for https mode
 
 mysql:
   host: demo.namespace.svc
