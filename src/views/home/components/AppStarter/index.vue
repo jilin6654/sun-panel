@@ -52,12 +52,7 @@ const apps = ref<App[]>([
     name: t('apps.exportImport.appName'),
     componentName: 'ImportExport',
     icon: 'icon-park-outline-import-and-export',
-  },
-  {
-    name: t('apps.about.appName'),
-    componentName: 'About',
-    icon: 'lucide-info',
-  },
+  }
 ])
 
 const authStore = useAuthStore()
