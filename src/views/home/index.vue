@@ -621,6 +621,7 @@ html {
 
 .text-shadow {
   text-shadow: 2px 2px 50px rgb(0, 0, 0);
+  font-size: 18px;
 }
 
 .app-icon-text-shadow {

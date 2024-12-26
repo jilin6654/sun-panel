@@ -6,7 +6,7 @@ import { PanelPanelConfigStyleEnum } from '@/enums'
 
 interface Prop {
   itemInfo?: Panel.ItemInfo
-  size?: number // 默认70
+  size?: number // 默认40
   forceBackground?: string // 强制背景色
   iconTextColor?: string
   iconTextInfoHideDescription: boolean
@@ -15,7 +15,7 @@ interface Prop {
 }
 
 const props = withDefaults(defineProps<Prop>(), {
-  size: 70,
+  size: 40,
 })
 
 const defaultBackground = '#2a2a2a6b'
@@ -43,8 +43,8 @@ const textColor = computed(() => {
       :style="{ background: itemInfo?.icon?.backgroundColor || defaultBackground }"
     >
       <!-- 图标 -->
-      <div class="app-icon-info-icon w-[70px] h-[70px]">
-        <div class="w-[70px] h-full flex items-center justify-center ">
+      <div class="app-icon-info-icon w-[40px] h-[40px]">
+        <div class="w-[40px] h-full flex items-center justify-center ">
           <ItemIcon :item-icon="itemInfo?.icon" force-background="transparent" :size="50" class="overflow-hidden rounded-xl" />
         </div>
       </div>
@@ -70,7 +70,7 @@ const textColor = computed(() => {
     <!-- 极简(小)图标（APP） -->
     <div v-if="style === PanelPanelConfigStyleEnum.icon" class="app-icon-small">
       <div
-        class="app-icon-small-icon overflow-hidden rounded-2xl sunpanel w-[70px] h-[70px] mx-auto rounded-2xl transition-all duration-200 hover:shadow-[0_0_20px_10px_rgba(0,0,0,0.2)]"
+        class="app-icon-small-icon overflow-hidden rounded-2xl sunpanel w-[40px] h-[40px] mx-auto rounded-2xl transition-all duration-200 hover:shadow-[0_0_20px_10px_rgba(0,0,0,0.2)]"
         :title="itemInfo?.description"
       >
         <ItemIcon :item-icon="itemInfo?.icon" />

@@ -5,11 +5,11 @@ import { SvgIconOnline } from '@/components/common'
 
 interface Prop {
   itemIcon?: Panel.ItemIcon | null
-  size?: number // 默认70
+  size?: number // 默认40
   forceBackground?: string // 强制背景色
 }
 
-const props = withDefaults(defineProps<Prop>(), { size: 70 })
+const props = withDefaults(defineProps<Prop>(), { size: 40 })
 const defaultBackground = '#2a2a2a6b'
 const defaultStyle = ref({
   width: `${props.size}px`,
