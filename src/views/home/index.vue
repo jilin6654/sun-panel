@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
-import { NBackTop, NButton, NButtonGroup, NDropdown, NModal, NSkeleton, NSpin, useDialog, useMessage } from 'naive-ui'
+import { NBackTop, NButton, NButtonGroup, NDropdown, NTabPane, NTabs, useDialog, useMessage } from 'naive-ui'
 import { nextTick, onMounted, ref } from 'vue'
 import { AppIcon, AppStarter, EditItem } from './components'
 import { Clock, SearchBox, SystemMonitor } from '@/components/deskModule'
@@ -48,6 +48,58 @@ const settingModalShow = ref(false)
 const items = ref<ItemGroup[]>([])
 const filterItems = ref<ItemGroup[]>([])
 
+const tabs = ref<{ key: string; title: string; src: string }[]>([])
+const activeTab = ref<string>('') // 添加当前激活的标签页
+
+// 添加 keepAlive 标记
+const keepAliveComponents = ref<string[]>([])
+
+// 添加拖动位置相关的响应式变量
+const tabPosition = ref({ x: 0, y: 0 })
+const isDragging = ref(false)
+const startPos = ref({ x: 0, y: 0 })
+
+// 计算初始居中位置的函数
+function calculateCenterPosition() {
+  const windowWidth = window.innerWidth
+  const windowHeight = window.innerHeight
+  const tabsWidth = 1000 // tabs宽度
+  const tabsHeight = 600 // tabs高度
+
+  return {
+    x: (windowWidth - tabsWidth) / 2,
+    y: (windowHeight - tabsHeight) / 2,
+  }
+}
+
+function handleTabDragStart(e: MouseEvent) {
+  isDragging.value = true
+  startPos.value = {
+    x: e.clientX - tabPosition.value.x,
+    y: e.clientY - tabPosition.value.y,
+  }
+
+  // 添加全局事件监听
+  document.addEventListener('mousemove', handleTabDragging)
+  document.addEventListener('mouseup', handleTabDragEnd)
+}
+
+function handleTabDragging(e: MouseEvent) {
+  if (!isDragging.value)
+    return
+
+  tabPosition.value = {
+    x: e.clientX - startPos.value.x,
+    y: e.clientY - startPos.value.y,
+  }
+}
+
+function handleTabDragEnd() {
+  isDragging.value = false
+  document.removeEventListener('mousemove', handleTabDragging)
+  document.removeEventListener('mouseup', handleTabDragEnd)
+}
+
 function openPage(openMethod: number, url: string, title?: string) {
   switch (openMethod) {
     case 1:
@@ -57,15 +109,51 @@ function openPage(openMethod: number, url: string, title?: string) {
       window.open(url)
       break
     case 3:
-      windowShow.value = true
-      windowSrc.value = url
-      windowTitle.value = title || url
-      windowIframeIsLoad.value = true
+      const tabKey = `${url}-${Date.now()}`
+      // 移除查找已存在标签的逻辑，直接创建新标签
+      tabs.value.push({ key: tabKey, title: title || url, src: url })
+      activeTab.value = tabKey // 切换到新标签
+      // 添加到 keepAlive 列表
+      keepAliveComponents.value.push(tabKey)
       break
-
     default:
       break
   }
+}
+
+function handleTabClose(key: string) {
+  const index = tabs.value.findIndex(tab => tab.key === key)
+  if (index !== -1) {
+    // 如果关闭的是当前激活的标签页
+    if (key === activeTab.value) {
+      // 如果还有其他标签页，切换到最后一个
+      if (tabs.value.length > 1) {
+        if (index === tabs.value.length - 1) {
+          // 如果是最后一个，切换到前一个
+          activeTab.value = tabs.value[index - 1].key
+        }
+        else {
+          // 否则切换到后一个
+          activeTab.value = tabs.value[index + 1].key
+        }
+      }
+    }
+    tabs.value.splice(index, 1)
+    // 从 keepAlive 列表中移除
+    const keepAliveIndex = keepAliveComponents.value.indexOf(key)
+    if (keepAliveIndex > -1)
+      keepAliveComponents.value.splice(keepAliveIndex, 1)
+    // 如果没有标签页了，清空activeTab
+    if (tabs.value.length === 0)
+      activeTab.value = ''
+  }
+}
+
+// 添加关闭所有标签页的方法
+function handleCloseAllTabs() {
+  tabs.value = []
+  activeTab.value = ''
+  keepAliveComponents.value = []
 }
 
 function handleItemClick(itemGroupIndex: number, item: Panel.ItemInfo) {
@@ -266,6 +354,9 @@ onMounted(() => {
   // 设置标题
   if (panelState.panelConfig.logoText)
     setTitle(panelState.panelConfig.logoText)
+
+  // 移除之前的useDraggable相关代码
+  tabPosition.value = calculateCenterPosition()
 })
 
 // 前端搜索过滤
@@ -559,32 +650,52 @@ function handleAddItem(itemIconGroupId?: number) {
     <EditItem v-model:visible="editItemInfoShow" :item-info="editItemInfoData" :item-group-id="currentAddItenIconGroupId" @done="handleEditSuccess" />
 
     <!-- 弹窗 -->
-    <NModal
-      v-model:show="windowShow" :mask-closable="false" preset="card"
-      style="max-width: 1000px;height: 600px;border-radius: 1rem;" :bordered="true" size="small" role="dialog"
-      aria-modal="true"
+    <div
+      v-if="tabs.length > 0"
+      class="draggable-tabs shadow-[0_0_10px_2px_rgba(0,0,0,0.2)]"
+      :style="{
+        transform: `translate(${tabPosition.x}px, ${tabPosition.y}px)`,
+        cursor: isDragging ? 'grabbing' : 'grab',
+      }"
     >
-      <template #header>
-        <div class="flex items-center">
-          <span class="mr-[20px]">
-            {{ windowTitle }}
-          </span>
+      <!-- 添加拖动区域 -->
+      <div class="drag-handle" @mousedown="handleTabDragStart">
+        <!-- 关闭按钮 -->
+        <div class="close-button" @click="handleCloseAllTabs">
+          ×
+        </div>
 
-          <NSpin v-if="windowIframeIsLoad" size="small" />
-        </div>
-      </template>
-      <div class="w-full h-full rounded-2xl overflow-hidden border dark:border-zinc-700">
-        <div v-if="windowIframeIsLoad" class="flex flex-col p-5">
-          <NSkeleton height="50px" width="100%" class="rounded-lg" />
-          <NSkeleton height="180px" width="100%" class="mt-[20px] rounded-lg" />
-          <NSkeleton height="180px" width="100%" class="mt-[20px] rounded-lg" />
-        </div>
-        <iframe
-          v-show="!windowIframeIsLoad" id="windowIframeId" ref="windowIframeRef" :src="windowSrc"
-          class="w-full h-full" frameborder="0" @load="handWindowIframeIdLoad"
-        />
+        <!-- 标签页标题栏 -->
+        <NTabs
+          v-model:value="activeTab"
+          type="card"
+          closable
+          class="h-full flex flex-col"
+          @close="handleTabClose"
+        >
+          <NTabPane
+            v-for="tab in tabs"
+            :key="tab.key"
+            :name="tab.key"
+            :tab="tab.title"
+            class="flex-1"
+            display-directive="show"
+          >
+            <div class="h-full tab-content">
+              <iframe
+                :src="tab.src"
+                class="w-full h-full"
+                frameborder="0"
+                :style="{
+                  visibility: activeTab === tab.key ? 'visible' : 'hidden',
+                  position: activeTab === tab.key ? 'static' : 'absolute',
+                }"
+              />
+            </div>
+          </NTabPane>
+        </NTabs>
       </div>
-    </NModal>
+    </div>
   </div>
 </template>
 
@@ -657,5 +768,93 @@ html {
   .icon-info-box{
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
+}
+
+.draggable-tabs {
+  position: fixed;
+  width: 1000px;
+  height: 600px;
+  border-radius: 1rem;
+  background-color: white;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  top: 0;
+  transform-origin: top left;
+  user-select: none; /* 防止拖动时选中文本 */
+  overflow: hidden; /* 确保内容不会超出圆角 */
+}
+
+.close-button {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  color: #666;
+  z-index: 100;
+  background-color: transparent;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.drag-handle {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* 修改标签页样式 */
+:deep(.n-tabs) {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+:deep(.n-tabs-nav) {
+  cursor: grab;
+}
+
+:deep(.n-tabs-nav:active) {
+  cursor: grabbing;
+}
+
+:deep(.n-tabs-wrapper) {
+  pointer-events: auto;
+}
+
+:deep(.n-tab-pane) {
+  pointer-events: none;
+}
+
+:deep(.n-tab-pane iframe) {
+  pointer-events: auto;
+}
+
+.tab-content {
+  position: relative;
+  height: 100%;
+}
+
+:deep(.n-tab-pane) {
+  height: 100%;
+  position: relative;
+}
+
+:deep(.n-tab-pane iframe) {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 </style>
