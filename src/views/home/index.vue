@@ -504,7 +504,7 @@ function handleAddItem(itemIconGroupId?: number) {
 
     <!-- 悬浮按钮 -->
     <div class="fixed-element shadow-[0_0_10px_2px_rgba(0,0,0,0.2)]">
-      <NButtonGroup vertical>
+      <NButtonGroup>
         <!-- 网络模式切换按钮组 -->
         <NButton
           v-if="panelState.networkMode === PanelStateNetworkModeEnum.lan && panelState.panelConfig.netModeChangeButtonShow" color="#2a2a2a6b"
@@ -633,7 +633,7 @@ html {
   /* 将元素固定在屏幕上 */
   right: 10px;
   /* 距离屏幕顶部的距离 */
-  bottom: 50px;
+  top: 5px;
   /* 距离屏幕左侧的距离 */
 }
 
