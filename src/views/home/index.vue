@@ -30,12 +30,6 @@ const scrollContainerRef = ref<HTMLElement | undefined>(undefined)
 
 const editItemInfoShow = ref<boolean>(false)
 const editItemInfoData = ref<Panel.ItemInfo | null>(null)
-const windowShow = ref<boolean>(false)
-const windowSrc = ref<string>('')
-const windowTitle = ref<string>('')
-
-const windowIframeRef = ref(null)
-const windowIframeIsLoad = ref<boolean>(false)
 
 const dropdownMenuX = ref(0)
 const dropdownMenuY = ref(0)
@@ -170,10 +164,6 @@ function handleItemClick(itemGroupIndex: number, item: Panel.ItemInfo) {
     jumpUrl = item.url
 
   openPage(item.openMethod, jumpUrl, item.title)
-}
-
-function handWindowIframeIdLoad(payload: Event) {
-  windowIframeIsLoad.value = false
 }
 
 function getList() {
