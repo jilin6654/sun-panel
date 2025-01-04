@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
 import { NBackTop, NButton, NButtonGroup, NDropdown, NTabPane, NTabs, useDialog, useMessage } from 'naive-ui'
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { AppIcon, AppStarter, EditItem } from './components'
 import { Clock, SearchBox, SystemMonitor } from '@/components/deskModule'
 import { SvgIcon } from '@/components/common'
@@ -38,7 +38,7 @@ const currentRightSelectItem = ref<Panel.ItemInfo | null>(null)
 const currentAddItenIconGroupId = ref<number | undefined>()
 
 const settingModalShow = ref(false)
-
+const showWindow = ref(false)
 const items = ref<ItemGroup[]>([])
 const filterItems = ref<ItemGroup[]>([])
 
@@ -78,13 +78,24 @@ function handleTabDragStart(e: MouseEvent) {
   document.addEventListener('mouseup', handleTabDragEnd)
 }
 
+// 限制拖动范围
 function handleTabDragging(e: MouseEvent) {
   if (!isDragging.value)
     return
 
+  const maxX = window.innerWidth - 1000 // 窗口宽度
+  const maxY = window.innerHeight - 600 // 窗口高度
+
+  let newX = e.clientX - startPos.value.x
+  let newY = e.clientY - startPos.value.y
+
+  // 限制范围
+  newX = Math.max(0, Math.min(newX, maxX))
+  newY = Math.max(0, Math.min(newY, maxY))
+
   tabPosition.value = {
-    x: e.clientX - startPos.value.x,
-    y: e.clientY - startPos.value.y,
+    x: newX,
+    y: newY,
   }
 }
 
@@ -109,6 +120,7 @@ function openPage(openMethod: number, url: string, title?: string) {
       activeTab.value = tabKey // 切换到新标签
       // 添加到 keepAlive 列表
       keepAliveComponents.value.push(tabKey)
+      showWindow.value = true
       break
     default:
       break
@@ -141,6 +153,15 @@ function handleTabClose(key: string) {
     if (tabs.value.length === 0)
       activeTab.value = ''
   }
+}
+
+// 隐藏标签页
+function handleHideTabs() {
+  showWindow.value = false
+}
+
+function handleShowTabs() {
+  showWindow.value = true
 }
 
 // 添加关闭所有标签页的方法
@@ -333,6 +354,14 @@ function getDropdownMenuOptions() {
   return dropdownMenuOptions
 }
 
+// 添加响应式判断
+const isMobile = ref(false)
+
+// 检查是否为移动设备
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 768
+}
+
 onMounted(() => {
   // 更新用户信息
   updateLocalUserInfo()
@@ -347,6 +376,14 @@ onMounted(() => {
 
   // 移除之前的useDraggable相关代码
   tabPosition.value = calculateCenterPosition()
+
+  // 添加响应式监听
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
 })
 
 // 前端搜索过滤
@@ -427,7 +464,7 @@ function handleAddItem(itemIconGroupId?: number) {
         <div class="mx-[auto] w-[80%]">
           <div class="flex mx-[auto] items-center justify-center text-white">
             <div class="logo">
-              <span class="text-2xl md:text-6xl font-bold text-shadow">
+              <span class="text-2xl md:text-6xl font-bold">
                 {{ panelState.panelConfig.logoText }}
               </span>
             </div>
@@ -586,6 +623,16 @@ function handleAddItem(itemIconGroupId?: number) {
     <!-- 悬浮按钮 -->
     <div class="fixed-element shadow-[0_0_10px_2px_rgba(0,0,0,0.2)]">
       <NButtonGroup>
+        <NButton
+          v-show="showWindow == false && tabs.length > 0"
+          color="#2a2a2a6b"
+          :title="t('panelHome.changeToWanModel')" @click="handleShowTabs"
+        >
+          <template #icon>
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 20 20"><g fill="none"><path d="M3 5a2 2 0 0 1 2-2h2a.5.5 0 0 1 0 1H5a1 1 0 0 0-1 1v2a.5.5 0 0 1-1 0V5zm9.5-1.5A.5.5 0 0 1 13 3h2a2 2 0 0 1 2 2v2a.5.5 0 0 1-1 0V5a1 1 0 0 0-1-1h-2a.5.5 0 0 1-.5-.5zm-9 9a.5.5 0 0 1 .5.5v2a1 1 0 0 0 1 1h2a.5.5 0 0 1 0 1H5a2 2 0 0 1-2-2v-2a.5.5 0 0 1 .5-.5zm13 0a.5.5 0 0 1 .5.5v2a2 2 0 0 1-2 2h-2a.5.5 0 0 1 0-1h2a1 1 0 0 0 1-1v-2a.5.5 0 0 1 .5-.5z" fill="currentColor" /></g></svg>
+          </template>
+        </NButton>
+
         <!-- 网络模式切换按钮组 -->
         <NButton
           v-if="panelState.networkMode === PanelStateNetworkModeEnum.lan && panelState.panelConfig.netModeChangeButtonShow" color="#2a2a2a6b"
@@ -641,18 +688,26 @@ function handleAddItem(itemIconGroupId?: number) {
 
     <!-- 弹窗 -->
     <div
-      v-if="tabs.length > 0"
+      v-show="showWindow && tabs.length > 0"
       class="draggable-tabs shadow-[0_0_10px_2px_rgba(0,0,0,0.2)]"
-      :style="{
+      :class="{ 'mobile-tabs': isMobile }"
+      :style="isMobile ? {} : {
         transform: `translate(${tabPosition.x}px, ${tabPosition.y}px)`,
         cursor: isDragging ? 'grabbing' : 'grab',
       }"
     >
       <!-- 添加拖动区域 -->
       <div class="drag-handle" @mousedown="handleTabDragStart">
-        <!-- 关闭按钮 -->
-        <div class="close-button" @click="handleCloseAllTabs">
-          ×
+        <!-- 控制按钮组 -->
+        <div class="control-buttons">
+          <!-- 最小化按钮 -->
+          <div class="control-button minimize-button" @click="handleHideTabs">
+            -
+          </div>
+          <!-- 关闭按钮 -->
+          <div class="control-button close-button" @click="handleCloseAllTabs">
+            ×
+          </div>
         </div>
 
         <!-- 标签页标题栏 -->
@@ -776,10 +831,27 @@ html {
   overflow: hidden; /* 确保内容不会超出圆角 */
 }
 
-.close-button {
+/* 移动端样式 */
+.mobile-tabs {
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  transform: none !important;
+  border-radius: 0;
+}
+
+/* 控制按钮组样式 */
+.control-buttons {
   position: absolute;
   right: 10px;
   top: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+
+.control-button {
   width: 24px;
   height: 24px;
   display: flex;
@@ -788,15 +860,25 @@ html {
   cursor: pointer;
   font-size: 20px;
   color: #666;
-  z-index: 100;
   background-color: transparent;
   border-radius: 50%;
   transition: all 0.2s;
 }
 
-.close-button:hover {
+.control-button:hover {
   background-color: rgba(0, 0, 0, 0.1);
   color: #333;
+}
+
+.minimize-button {
+  font-size: 16px;
+}
+
+/* 覆盖之前的关闭按钮样式 */
+.close-button {
+  position: relative;
+  right: 0;
+  top: 0;
 }
 
 .drag-handle {
